@@ -369,14 +369,6 @@ const getProfile = async (refid: string, version: string, name?: string) => {
             friend_no: K.ITEM('s8', -1),
             score_flg: K.ITEM('s8', -1),
         },
-        // TODO: Navi data ??
-        navi_data: {
-            raisePoint: K.ARRAY('s32', [-1, -1, -1, -1, -1]),
-            navi_param: {
-                navi_id: K.ITEM('u16', 0),
-                friendship: K.ITEM('s32', 0),
-            },
-        },
         // TODO: Daily missions
         mission: [
             {
@@ -402,6 +394,10 @@ const getProfile = async (refid: string, version: string, name?: string) => {
         item: [],
         chara_param: [],
         stamp: [],
+	navi_data: {
+            raisePoint: K.ARRAY('s32', []),
+            navi_param: [],
+        },
     };
 
     const achievements = <AchievementsUsaneko>await utils.readAchievements(refid, version, { ...defaultAchievements, version });
@@ -477,6 +473,15 @@ const getProfile = async (refid: string, version: string, name?: string) => {
 
         player.item.push(item);
     }
+	
+	const profileNavi = achievements.navi_data;
+	player.navi_data.raisePoint = K.ARRAY('s32', profileNavi.raisePoint);
+	for (const param of profileNavi.navi_param){
+		player.navi_data.navi_param.push({
+			navi_id: K.ITEM('u16', param.navi_id),
+			friendship: K.ITEM('s32', param.friendship),
+		});
+	}
 
     // Add version specific datas
     let params = await utils.readParams(refid, version);
@@ -627,6 +632,25 @@ const write = async (req: EamuseInfo, data: any, send: EamuseSend): Promise<any>
 
         achievements.stamps[id] = cnt;
     }
+	
+	// Navi evolution params
+	let navi_data = _.get(data, 'navi_data', []);
+	
+	if (!_.isArray(navi_data.navi_param)) {
+        navi_data.navi_param = [navi_data.navi_param];
+    }
+	
+	const navi_ach = achievements.navi_data;
+	navi_ach.raisePoint = $(navi_data).numbers('raisePoint');
+	
+	var new_params = [];
+	for (const param of navi_data.navi_param){
+		new_params.push({
+			navi_id: $(param).number('navi_id'),
+			friendship: $(param).number('friendship'),
+		});
+	};
+	navi_ach.navi_param = new_params;
 
     await utils.writeParams(refid, version, params);
     await utils.writeAchievements(refid, version, achievements);
@@ -698,6 +722,10 @@ const defaultAchievements: AchievementsUsaneko = {
     items: {},
     charas: {},
     stamps: {},
+	navi_data: {
+		raisePoint: [],
+		navi_param: [],
+	},
 }
 
 const PHASE = {

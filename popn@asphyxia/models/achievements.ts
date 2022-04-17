@@ -105,4 +105,9 @@ export interface AchievementsUsaneko extends Achievements {
   stamps: {
     [stamp_id: string]: number;
   };
+  
+  navi_data: {
+	raisePoint: number[];
+	navi_param: {navi_id: number, friendship: number}[];
+  };
 }
